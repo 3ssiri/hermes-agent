@@ -69,8 +69,29 @@ class TestWriteDenyExactPaths:
 
     def test_shell_profiles(self):
         home = str(Path.home())
-        for name in [".bashrc", ".zshrc", ".profile", ".bash_profile", ".zprofile"]:
+        for name in [
+            ".bashrc",
+            ".zshrc",
+            ".profile",
+            ".bash_profile",
+            ".zprofile",
+            # Added June 2026 (Claude Code v2.1.160-inspired hardening):
+            # secondary startup files with the same persistence vector.
+            ".zshenv",
+            ".zlogin",
+            ".bash_login",
+        ]:
             assert _is_write_denied(os.path.join(home, name)) is True, f"{name} should be denied"
+
+    def test_git_config_paths(self):
+        """Global git config files are write-denied (hooksPath/credential.helper = RCE)."""
+        home = str(Path.home())
+        assert _is_write_denied(os.path.join(home, ".gitconfig")) is True
+        # XDG git config dir — whole directory is prefix-denied.
+        assert _is_write_denied(os.path.join(home, ".config", "git", "config")) is True
+        assert _is_write_denied(os.path.join(home, ".config", "git", "hooks", "pre-commit")) is True
+        # Project-local git config is NOT denied (legit workflow target).
+        assert _is_write_denied("/tmp/someproject/.git/config") is False
 
     def test_package_manager_configs(self):
         home = str(Path.home())

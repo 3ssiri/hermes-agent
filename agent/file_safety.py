@@ -51,6 +51,19 @@ def build_write_denied_paths(home: str) -> set[str]:
             os.path.join(home, ".profile"),
             os.path.join(home, ".bash_profile"),
             os.path.join(home, ".zprofile"),
+            # Less common shell startup files that still execute on login /
+            # shell start — same persistence vector as .bashrc. Inspired by
+            # Claude Code v2.1.160 (June 2026), which added write prompts for
+            # .zshenv / .bash_login after these were used to bypass its
+            # startup-file guard.
+            os.path.join(home, ".zshenv"),
+            os.path.join(home, ".zlogin"),
+            os.path.join(home, ".bash_login"),
+            # Global git config: a silent write can set core.hooksPath /
+            # credential.helper and execute attacker code on the user's next
+            # git command in any repo (same Claude Code v2.1.160 hardening,
+            # which guards ~/.config/git/ — see build_write_denied_prefixes).
+            os.path.join(home, ".gitconfig"),
             os.path.join(home, ".netrc"),
             os.path.join(home, ".pgpass"),
             os.path.join(home, ".npmrc"),
@@ -78,6 +91,12 @@ def build_write_denied_prefixes(home: str) -> list[str]:
             os.path.join(home, ".azure"),
             os.path.join(home, ".config", "gh"),
             os.path.join(home, ".config", "gcloud"),
+            # ~/.config/git/ holds the XDG global git config + global hooks
+            # and attributes files — writable hooksPath/credential.helper is
+            # arbitrary code execution on the user's next git command.
+            # Inspired by Claude Code v2.1.160 (June 2026) startup-file and
+            # git-config write hardening.
+            os.path.join(home, ".config", "git"),
         ]
     ]
 

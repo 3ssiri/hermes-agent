@@ -252,7 +252,7 @@ THREAT_PATTERNS = [
     (r'\bcrontab\b',
      "persistence_cron", "medium", "persistence",
      "modifies cron jobs"),
-    (r'\.(bashrc|zshrc|profile|bash_profile|bash_login|zprofile|zlogin)\b',
+    (r'\.(bashrc|zshrc|zshenv|profile|bash_profile|bash_login|zprofile|zlogin)\b',
      "shell_rc_mod", "medium", "persistence",
      "references shell startup file"),
     (r'authorized_keys',
