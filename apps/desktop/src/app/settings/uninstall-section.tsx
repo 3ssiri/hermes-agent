@@ -5,7 +5,6 @@ import type { DesktopUninstallMode, DesktopUninstallSummary } from '@/global'
 import { AlertTriangle, Loader2, Trash2 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/i18n'
-import { useI18n } from '@/i18n'
 
 import { SectionHeading } from './primitives'
 

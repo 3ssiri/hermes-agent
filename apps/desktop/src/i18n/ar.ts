@@ -1072,7 +1072,6 @@ export const ar = defineLocale({
     shiftClickHint: 'استخدم Shift للتحديد المتعدد',
     noWorkspace: 'بدون مساحة عمل',
     newSessionIn: label => `جلسة جديدة في ${label}`,
-    reorderWorkspace: label => `إعادة ترتيب ${label}`,
     showMoreIn: (count, label) => `إظهار ${count} أخرى في ${label}`,
     loading: 'جار التحميل...',
     loadMore: 'تحميل المزيد',
@@ -1332,9 +1331,8 @@ export const ar = defineLocale({
       loadingQuestion: 'جار تحميل السؤال...',
       other: 'غير ذلك',
       placeholder: 'اكتب إجابتك...',
-      back: 'رجوع',
       skip: 'تخطي',
-      send: 'إرسال'
+      continueLabel: 'متابعة'
     },
     tool: {
       code: 'الكود',
@@ -1404,7 +1402,7 @@ export const ar = defineLocale({
     sessionBusy: 'الجلسة مشغولة',
     branchStopCurrent: 'أوقف الدور الحالي قبل التفريع',
     branchNoText: 'لا يوجد نص للتفريع',
-    branchTitle: 'تم تفريع المحادثة',
+    branchTitle: n => `مسودة: تفريع #${n}`,
     branchFailed: 'فشل التفريع',
     deleteFailed: 'فشل الحذف',
     archived: 'تمت الأرشفة',
