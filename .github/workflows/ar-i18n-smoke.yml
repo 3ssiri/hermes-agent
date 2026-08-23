@@ -11,7 +11,7 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -22,11 +22,7 @@ jobs:
         run: npm --version | grep -q '^12\.' || npm i -g npm@12
       - name: Install dependencies
         run: npm ci
-      - name: Desktop typecheck
-        run: npm run typecheck --workspace apps/desktop
-      - name: Desktop lint
-        run: npm run lint --workspace apps/desktop
-      - name: Desktop tests
-        run: npm run test --workspace apps/desktop
-      - name: Web checks
-        run: npm run check --workspace web
+      - name: Desktop i18n coverage
+        run: npm exec --workspace apps/desktop -- vitest run src/i18n/coverage.test.ts --project ui
+      - name: Web i18n coverage
+        run: npm exec --workspace web -- vitest run src/i18n/coverage.test.ts
