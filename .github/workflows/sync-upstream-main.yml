@@ -1,9 +1,9 @@
 name: Sync upstream main into Arabic i18n PR
 
 on:
-  push:
+  pull_request:
     branches:
-      - ci/ar-i18n-base-fd760
+      - ci/sync-run-base
 
 permissions:
   contents: write
