@@ -1,0 +1,131 @@
+name: Sync upstream main into Arabic i18n PR
+
+on:
+  push:
+    branches:
+      - ci/ar-i18n-base-fd760
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ar-locale-catchup
+          fetch-depth: 0
+
+      - name: Merge current upstream main safely
+        shell: bash
+        env:
+          EXPECTED_HEAD: 93c95019ebac6f53be7de25b0cb6a5c7fc1fee34
+          EXPECTED_UPSTREAM: f293e7206b4ddd66042329442c6afebc19a8808d
+        run: |
+          set -euo pipefail
+
+          actual_head="$(git rev-parse HEAD)"
+          if [[ "$actual_head" != "$EXPECTED_HEAD" ]]; then
+            echo "Refusing to sync: ar-locale-catchup moved from $EXPECTED_HEAD to $actual_head" >&2
+            exit 1
+          fi
+
+          git remote add upstream https://github.com/NousResearch/hermes-agent.git
+          git fetch --no-tags upstream main
+          actual_upstream="$(git rev-parse upstream/main)"
+          if [[ "$actual_upstream" != "$EXPECTED_UPSTREAM" ]]; then
+            echo "Refusing to sync: upstream main moved from $EXPECTED_UPSTREAM to $actual_upstream" >&2
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          set +e
+          git merge --no-ff --no-commit upstream/main
+          merge_rc=$?
+          set -e
+
+          if [[ $merge_rc -ne 0 ]]; then
+            mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
+            if [[ ${#conflicts[@]} -ne 1 || "${conflicts[0]}" != "apps/desktop/src/i18n/ar.ts" ]]; then
+              printf 'Unexpected merge conflicts:\n' >&2
+              printf '  %s\n' "${conflicts[@]}" >&2
+              git merge --abort || true
+              exit 1
+            fi
+
+            git checkout --ours apps/desktop/src/i18n/ar.ts
+            git show upstream/main:apps/desktop/src/i18n/ar.ts > /tmp/ar-upstream.ts
+
+            python - <<'PY'
+          from pathlib import Path
+
+          target_path = Path('apps/desktop/src/i18n/ar.ts')
+          upstream_path = Path('/tmp/ar-upstream.ts')
+          target = target_path.read_text()
+          upstream = upstream_path.read_text()
+
+          if '    remoteOverride: {' in target:
+              raise SystemExit('remoteOverride unexpectedly already exists in PR-side ar.ts')
+
+          lines = upstream.splitlines(keepends=True)
+          try:
+              start = next(i for i, line in enumerate(lines) if line.startswith('    remoteOverride: {'))
+          except StopIteration as exc:
+              raise SystemExit('Could not find remoteOverride in upstream Arabic locale') from exc
+
+          end = None
+          for i in range(start + 1, len(lines)):
+              if lines[i].startswith('    },'):
+                  end = i
+                  break
+          if end is None:
+              raise SystemExit('Could not find end of upstream remoteOverride block')
+
+          block = ''.join(lines[start:end + 1])
+          marker = "    connectGateway: 'إدارة البوابات…',\n"
+          if marker not in target:
+              raise SystemExit('Could not find connectGateway insertion point in PR Arabic locale')
+
+          target = target.replace(marker, marker + block, 1)
+          target_path.write_text(target)
+          PY
+
+            git add apps/desktop/src/i18n/ar.ts
+          fi
+
+          unresolved="$(git diff --name-only --diff-filter=U)"
+          if [[ -n "$unresolved" ]]; then
+            echo "Unresolved conflicts remain:" >&2
+            echo "$unresolved" >&2
+            exit 1
+          fi
+
+          git diff --cached --check
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Desktop typecheck
+        run: npm run typecheck --workspace apps/desktop
+
+      - name: Desktop lint
+        run: npm run lint --workspace apps/desktop
+
+      - name: Desktop i18n coverage
+        run: npm exec --workspace apps/desktop -- vitest run src/i18n/coverage.test.ts --project ui
+
+      - name: Web i18n coverage
+        run: npm exec --workspace web -- vitest run src/i18n/coverage.test.ts
+
+      - name: Commit and push merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --short
+          git commit -m "merge: sync upstream main into Arabic i18n PR"
+          git push origin HEAD:ar-locale-catchup
