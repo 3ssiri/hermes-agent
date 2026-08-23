@@ -1,1 +1,1 @@
-temporary trigger for observable upstream sync
+temporary trigger for observable post-sync validation
